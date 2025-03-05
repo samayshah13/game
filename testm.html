@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eco Hero: Forest Rescue</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    #homepage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #2c3e50;
+      color: white;
+    }
+    #homepage button {
+      margin: 10px;
+      padding: 15px 30px;
+      font-size: 18px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #3498db;
+      color: white;
+    }
+    #homepage button:hover {
+      background-color: #2980b9;
+    }
+    #levelsScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #2c3e50;
+      color: white;
+    }
+    #levelsScreen button {
+      margin: 10px;
+      padding: 15px 30px;
+      font-size: 18px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #3498db;
+      color: white;
+    }
+    #levelsScreen button:disabled {
+      background-color: #7f8c8d;
+      cursor: not-allowed;
+    }
+    #levelsScreen button:hover:not(:disabled) {
+      background-color: #2980b9;
+    }
+    #renderDiv {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="homepage">
+    <h1>Eco Hero: Forest Rescue</h1>
+    <button id="aboutUsBtn">ABOUT US</button>
+    <button id="levelsBtn">LEVELS</button>
+    <button id="level1Btn">LEVEL 1</button>
+  </div>
+
+  <div id="levelsScreen">
+    <h1>Select Level</h1>
+    <button id="level1LevelsBtn">Level 1</button>
+    <button id="level2LevelsBtn" disabled>Level 2</button>
+    <button id="level3LevelsBtn" disabled>Level 3</button>
+    <button id="backToHomeBtn">Back to Home</button>
+  </div>
+
+  <div id="renderDiv"></div>
+
+  <script>
+    let currentLevel = 1;
+
+    // Event listeners for buttons
+    document.getElementById('aboutUsBtn').addEventListener('click', () => {
+      alert("Eco Hero: Forest Rescue" is more than just a game; it’s a call to action. Through Riley’s story, players learn about the challenges facing our planet and the steps we can take to make a difference. By completing each level, players become eco-heroes themselves, ready to protect and preserve the natural world.");
+    });
+
+    document.getElementById('levelsBtn').addEventListener('click', () => {
+      document.getElementById('homepage').style.display = 'none';
+      document.getElementById('levelsScreen').style.display = 'flex';
+    });
+
+    document.getElementById('level1Btn').addEventListener('click', () => {
+      document.getElementById('homepage').style.display = 'none';
+      document.getElementById('renderDiv').style.display = 'block';
+      startLevel(1);
+    });
+
+    document.getElementById('level1LevelsBtn').addEventListener('click', () => {
+      document.getElementById('levelsScreen').style.display = 'none';
+      document.getElementById('renderDiv').style.display = 'block';
+      startLevel(1);
+    });
+
+    document.getElementById('level2LevelsBtn').addEventListener('click', () => {
+      document.getElementById('levelsScreen').style.display = 'none';
+      document.getElementById('renderDiv').style.display = 'block';
+      startLevel(2);
+    });
+
+    document.getElementById('level3LevelsBtn').addEventListener('click', () => {
+      document.getElementById('levelsScreen').style.display = 'none';
+      document.getElementById('renderDiv').style.display = 'block';
+      startLevel(3);
+    });
+
+    document.getElementById('backToHomeBtn').addEventListener('click', () => {
+      document.getElementById('levelsScreen').style.display = 'none';
+      document.getElementById('homepage').style.display = 'flex';
+    });
+
+    // Function to start a level
+    function startLevel(level) {
+      if (level > currentLevel) {
+        alert("Please complete the previous level first!");
+        return;
+      }
+
+      const config = {
+        type: Phaser.AUTO,
+        parent: 'renderDiv',
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+        },
+        width: 800,
+        height: 600,
+        physics: {
+          default: 'arcade',
+          arcade: {
+            debug: false,
+            gravity: { y: 0 }
+          }
+        },
+        scene: level === 1 ? EcoHeroGame : level === 2 ? PuppyRescue : ForestRestoration
+      };
+
+      if (window.phaserGame) {
+        window.phaserGame.destroy(true);
+      }
+      window.phaserGame = new Phaser.Game(config);
+    }
+
+    // Level 1: Eco Hero Game
+    class EcoHeroGame extends Phaser.Scene {
+      constructor() {
+        super();
+        this.player = null;
+        this.fires = null;
+        this.waterParticles = null;
+        this.waterParticleManager = null;
+        this.treeSeeds = null;
+        this.fallenTrees = null;
+        this.seedCount = 0;
+        this.plantedTrees = null;
+        this.timeLeft = 60;
+        this.timeText = null;
+        this.fireCount = 8;
+        this.isWaterSpraying = false;
+        this.isDead = false;
+        this.dangerDistance = 80;
+        this.sustainabilityTips = [
+          "Tip: Plant more trees to combat climate change!",
+          "Tip: Regular forest maintenance prevents wildfires!",
+          "Tip: Protect our forests for future generations!",
+          "Tip: Report any signs of forest fires immediately!"
+        ];
+      }
+
+      preload() {
+        this.load.image('background', 'https://play.rosebud.ai/assets/forest_background.png?cpNP');
+        this.load.image('tree_normal', 'https://play.rosebud.ai/assets/tree_normal.png?RlfX');
+        this.load.image('seed', 'https://play.rosebud.ai/assets/seedsapling.png?g8bW');
+        this.load.image('hero', 'https://play.rosebud.ai/assets/firefighter.png?E8g3');
+        this.load.image('water_particle', 'https://play.rosebud.ai/assets/water_particle.png?WnHo');
+        this.load.image('fire_sprite', 'https://play.rosebud.ai/assets/fire_sprite.png?c4BH');
+        this.load.image('ui_frame', 'https://play.rosebud.ai/assets/ui_frame.png?kRp4');
+        this.load.image('flame_icon', 'https://png.pngtree.com/element_our/20200610/ourmid/pngtree-spring-plant-sapling-image_2245744.jpg');
+      }
+
+      create() {
+        // Background
+        const background = this.add.image(400, 300, 'background');
+        const scaleX = 800 / background.width;
+        const scaleY = 600 / background.height;
+        const scale = Math.max(scaleX, scaleY);
+        background.setScale(scale);
+
+        // Create trees
+        for (let i = 0; i < 10; i++) {
+          const x = Phaser.Math.Between(100, 700);
+          const tree = this.add.image(x, 550, 'tree_normal');
+          const treeScale = 180 / tree.height;
+          tree.setScale(treeScale);
+          tree.setOrigin(0.5, 1);
+        }
+
+        // Create fires
+        this.fires = this.physics.add.group();
+        for (let i = 0; i < this.fireCount; i++) {
+          const fire = this.physics.add.sprite(
+            Phaser.Math.Between(100, 700),
+            Phaser.Math.Between(100, 500),
+            'fire_sprite'
+          );
+          fire.setScale(50 / fire.height);
+          this.fires.add(fire);
+
+          // Add fire animation
+          this.tweens.add({
+            targets: fire,
+            scaleX: fire.scaleX * 1.2,
+            scaleY: fire.scaleY * 1.2,
+            duration: 500,
+            yoyo: true,
+            repeat: -1
+          });
+        }
+
+        // Create player
+        this.player = this.physics.add.sprite(400, 300, 'hero');
+        this.player.setScale(80 / this.player.height);
+        this.player.setCollideWorldBounds(true);
+
+        // Initialize groups
+        this.treeSeeds = this.physics.add.group();
+        this.fallenTrees = this.physics.add.group();
+        this.plantedTrees = this.physics.add.group();
+
+        // Create fallen trees
+        for (let i = 0; i < 5; i++) {
+          const fallenTree = this.physics.add.sprite(
+            Phaser.Math.Between(100, 700),
+            Phaser.Math.Between(100, 500),
+            'tree_normal'
+          );
+          fallenTree.setScale(0.15);
+          fallenTree.setRotation(Phaser.Math.Between(0, Math.PI * 2));
+          this.fallenTrees.add(fallenTree);
+        }
+
+        // Create tree seeds
+        for (let i = 0; i < 8; i++) {
+          const seed = this.physics.add.sprite(
+            Phaser.Math.Between(100, 700),
+            Phaser.Math.Between(100, 500),
+            'seed'
+          );
+          seed.setScale(0.1);
+          this.treeSeeds.add(seed);
+        }
+
+        // Add colliders and overlap detection
+        this.physics.add.overlap(this.player, this.treeSeeds, this.collectSeed, null, this);
+        this.physics.add.collider(this.player, this.fallenTrees);
+
+        // Water particles
+        this.waterParticleManager = this.add.particles('water_particle');
+        this.waterParticles = this.waterParticleManager.createEmitter({
+          scale: { start: 0.2, end: 0 },
+          speed: 300,
+          angle: { min: -15, max: 15 },
+          lifespan: 300,
+          quantity: 3,
+          blendMode: 'ADD',
+          on: false,
+          active: true
+        });
+        this.waterParticles.setPosition(-1000, -1000); // Start off-screen
+
+        // UI Frame for timer and score
+        const uiFrame = this.add.image(100, 50, 'ui_frame');
+        uiFrame.setScale(200 / uiFrame.width);
+
+        // Timer text
+        this.timeText = this.add.text(16, 16, 'Time: 60', {
+          fontSize: '32px',
+          fill: '#fff'
+        });
+
+        // Timer event
+        this.time.addEvent({
+          delay: 1000,
+          callback: this.updateTimer,
+          callbackScope: this,
+          loop: true
+        });
+
+        // Controls
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.spaceKey = this.input.keyboard.addKey('SPACE');
+
+        // Score with flame icon
+        const flameIcon = this.add.image(16, 70, 'flame_icon');
+        flameIcon.setScale(20 / flameIcon.height);
+        this.scoreText = this.add.text(40, 60, 'x ' + this.fireCount, {
+          fontSize: '32px',
+          fill: '#fff'
+        });
+
+        // Seed counter
+        const seedIcon = this.add.image(16, 110, 'seed');
+        seedIcon.setScale(0.1);
+        this.seedText = this.add.text(40, 100, 'x ' + this.seedCount, {
+          fontSize: '32px',
+          fill: '#fff'
+        });
+
+        // Add NPCs with sustainability tips
+        this.createNPCs();
+
+        // Show initial tip
+        this.showRandomTip();
+      }
+
+      createNPCs() {
+        const tipText = this.add.text(400, 550, '', {
+          fontSize: '20px',
+          fill: '#fff',
+          backgroundColor: '#000000aa',
+          padding: { x: 10, y: 5 }
+        }).setOrigin(0.5, 0);
+        tipText.setDepth(1);
+        this.tipText = tipText;
+      }
+
+      showRandomTip() {
+        const randomTip = Phaser.Math.RND.pick(this.sustainabilityTips);
+        this.tipText.setText(randomTip);
+
+        // Change tip every 5 seconds
+        this.time.addEvent({
+          delay: 5000,
+          callback: () => this.showRandomTip(),
+          loop: false
+        });
+      }
+
+      update() {
+        // Player movement
+        const speed = 200;
+        if (this.cursors.left.isDown) {
+          this.player.setVelocityX(-speed);
+          this.player.flipX = true;
+        } else if (this.cursors.right.isDown) {
+          this.player.setVelocityX(speed);
+          this.player.flipX = false;
+        } else {
+          this.player.setVelocityX(0);
+        }
+
+        if (this.cursors.up.isDown) {
+          this.player.setVelocityY(-speed);
+        } else if (this.cursors.down.isDown) {
+          this.player.setVelocityY(speed);
+        } else {
+          this.player.setVelocityY(0);
+        }
+
+        if (this.isDead) return; // Stop processing if player is dead
+
+        // Check for fire proximity and player death
+        this.fires.getChildren().forEach(fire => {
+          const distanceToFire = Phaser.Math.Distance.Between(
+            this.player.x, this.player.y,
+            fire.x, fire.y
+          );
+
+          if (distanceToFire < this.dangerDistance) {
+            this.playerDeath();
+            return;
+          }
+        });
+
+        // Water spray
+        if (this.spaceKey.isDown) {
+          this.isWaterSpraying = true;
+          this.waterParticles.setPosition(this.player.x, this.player.y);
+          this.waterParticles.start();
+
+          // Check for fire collisions
+          this.fires.getChildren().forEach(fire => {
+            const distance = Phaser.Math.Distance.Between(
+              this.player.x, this.player.y,
+              fire.x, fire.y
+            );
+
+            if (distance < 100 && this.isWaterSpraying) {
+              fire.destroy();
+              this.fireCount--;
+              this.scoreText.setText('x ' + this.fireCount);
+
+              if (this.fireCount <= 0) {
+                this.gameWin();
+              }
+            }
+          });
+        } else {
+          this.isWaterSpraying = false;
+          if (this.waterParticles) {
+            this.waterParticles.stop();
+          }
+        }
+
+        // Plant tree when E key is pressed and player has seeds
+        const eKey = this.input.keyboard.addKey('E');
+        if (Phaser.Input.Keyboard.JustDown(eKey)) {
+          this.plantTree();
+        }
+      }
+
+      collectSeed(player, seed) {
+        seed.destroy();
+        this.seedCount++;
+        this.seedText.setText('x ' + this.seedCount);
+      }
+
+      plantTree() {
+        if (this.seedCount > 0) {
+          const newTree = this.physics.add.sprite(this.player.x, this.player.y, 'tree_normal');
+          newTree.setScale(0.15);
+          this.plantedTrees.add(newTree);
+          this.seedCount--;
+          this.seedText.setText('x ' + this.seedCount);
+        }
+      }
+
+      updateTimer() {
+        this.timeLeft--;
+        this.timeText.setText('Time: ' + this.timeLeft);
+
+        if (this.timeLeft <= 0) {
+          this.gameLose();
+        }
+      }
+
+      gameWin() {
+        const winText = this.add.text(400, 300, 'Level Complete!', {
+          fontSize: '64px',
+          fill: '#fff'
+        }).setOrigin(0.5);
+        this.scene.pause();
+
+        if (currentLevel < 3) {
+          currentLevel++;
+          document.getElementById(`level${currentLevel}LevelsBtn`).disabled = false;
+        }
+
+        setTimeout(() => {
+          document.getElementById('renderDiv').style.display = 'none';
+          document.getElementById('levelsScreen').style.display = 'flex';
+        }, 3000);
+      }
+
+      gameLose() {
+        const loseText = this.add.text(400, 300, 'Time Up!', {
+          fontSize: '64px',
+          fill: '#fff'
+        }).setOrigin(0.5);
+        this.scene.pause();
+
+        setTimeout(() => {
+          document.getElementById('renderDiv').style.display = 'none';
+          document.getElementById('levelsScreen').style.display = 'flex';
+        }, 3000);
+      }
+
+      playerDeath() {
+        const deathText = this.add.text(400, 300, 'You got too close to the fire!\nRestarting...', {
+          fontSize: '32px',
+          fill: '#ff0000',
+          align: 'center'
+        }).setOrigin(0.5);
+
+        // Restart the scene after a delay
+        this.time.delayedCall(2000, () => {
+          this.scene.restart();
+        });
+      }
+    }
+
+    class PuppyRescue extends Phaser.Scene {
+  constructor() {
+    super();
+    this.player = null;
+    this.puppy = null;
+    this.platforms = null;
+    this.carrying = false;
+    this.gameState = 'searching'; // searching, climbing, rescuing, descending, complete
+    this.progressText = null;
+    this.returnButton = null; // Add a reference to the return button
+  }
+
+  preload() {
+    // Load all generated assets
+    this.load.image('ladder', 'https://play.rosebud.ai/assets/treeTrunk.png?8CWw');
+    this.load.image('background', 'https://play.rosebud.ai/assets/forestBackground.png?WIVY');
+    this.load.image('ground', 'https://play.rosebud.ai/assets/groundTexture.png?n5y2');
+    this.load.image('trunk', 'https://play.rosebud.ai/assets/treeTrunk.png?8CWw');
+    this.load.image('branch', 'https://play.rosebud.ai/assets/treeBranch.png?fie4');
+    this.load.image('playerIdle', 'https://play.rosebud.ai/assets/firefighter (1).jpg?Vs9Y');
+    this.load.image('playerWalk', 'https://play.rosebud.ai/assets/playerWalk.png?NhtI');
+    this.load.image('playerClimb', 'https://play.rosebud.ai/assets/playerClimb.png?ks5X');
+    this.load.image('playerCarrying', 'https://play.rosebud.ai/assets/playerCarrying.png?OqzN');
+    this.load.image('puppyStuck', 'https://play.rosebud.ai/assets/puppyStuck.png?uMtG');
+    this.load.image('puppyBarking', 'https://play.rosebud.ai/assets/puppyBarking.png?Xjwm');
+    this.load.image('uiPanel', 'https://play.rosebud.ai/assets/uiWoodPanel.png?fsIt');
+    this.load.image('speechBubble', 'https://play.rosebud.ai/assets/speechBubble.png?ua3y');
+  }
+
+  create() {
+    // Background
+    const background = this.add.image(400, 300, 'background');
+    const scale = Math.max(800 / background.width, 600 / background.height);
+    background.setScale(scale);
+
+    // Create ground
+    this.platforms = this.physics.add.staticGroup();
+    const ground = this.platforms.create(400, 580, 'ground');
+    ground.setScale(800 / ground.width, 40 / ground.height).refreshBody();
+
+    // Create tree trunk
+    const trunk = this.add.tileSprite(400, 300, 60, 500, 'trunk');
+    this.physics.add.existing(trunk, true);
+
+    // Create climbable branches
+    this.branches = this.physics.add.staticGroup();
+    const branchPositions = [
+      { x: 300, y: 500 }, // Lower first branch
+      { x: 450, y: 450 },
+      { x: 350, y: 400 },
+      { x: 450, y: 350 },
+      { x: 350, y: 300 },
+      { x: 450, y: 250 },
+      { x: 400, y: 200 } // Higher final branch
+    ];
+    branchPositions.forEach(pos => {
+      const branch = this.branches.create(pos.x, pos.y, 'branch');
+      branch.setScale(0.2).refreshBody();
+    });
+
+    // Create ladder segments
+    this.ladders = this.physics.add.staticGroup();
+    for (let y = 550; y >= 150; y -= 50) {
+      const ladder = this.ladders.create(150, y, 'ladder');
+      ladder.setScale(0.1, 0.1).refreshBody();
+      ladder.alpha = 0.6;
+    }
+
+    // Create player
+    this.player = this.physics.add.sprite(100, 500, 'playerIdle');
+    this.player.setScale(0.1);
+    this.player.body.setCollideWorldBounds(true);
+    this.player.body.setGravityY(200); // Reduced gravity for easier control
+    this.player.isClimbing = false;
+    this.player.setBounce(0.1);
+    this.player.setDepth(2); // Ensure player is rendered above the puppy
+
+    // Create puppy
+    this.puppy = this.physics.add.sprite(400, 120, 'puppyStuck');
+    this.puppy.setScale(0.15);
+    this.puppy.body.setCollideWorldBounds(true);
+    this.puppy.body.setGravityY(300);
+    this.puppy.setDepth(1); // Ensure puppy is rendered below the player
+
+    // Add colliders
+    this.physics.add.collider(this.player, this.platforms);
+    this.physics.add.collider(this.player, this.branches);
+    this.physics.add.collider(this.puppy, this.branches);
+    this.physics.add.overlap(this.player, this.puppy, this.touchPuppy, null, this);
+    this.physics.add.overlap(this.player, this.ladders, this.onLadder, null, this);
+
+    // Controls
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.wKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+    this.rKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+
+    // Progress text
+    const uiPanel = this.add.image(400, 30, 'uiPanel');
+    uiPanel.setScale(0.3);
+    this.progressText = this.add.text(16, 16, 'Level 2: Find the puppy!', {
+      fontSize: '18px',
+      fill: '#fff',
+      padding: { x: 10, y: 5 }
+    });
+
+    // Bark effect
+    this.time.addEvent({
+      delay: 3000,
+      callback: this.barkEffect,
+      callbackScope: this,
+      loop: true
+    });
+
+    // Add Return Button
+    this.returnButton = this.add.text(700, 30, 'Return', {
+      fontSize: '24px',
+      fill: '#fff',
+      backgroundColor: '#3498db',
+      padding: { x: 10, y: 5 }
+    }).setInteractive(); // Make the text interactive
+
+    // Add event listener for the Return Button
+    this.returnButton.on('pointerdown', () => {
+      // Enable all level buttons
+      document.getElementById('level1LevelsBtn').disabled = false;
+      document.getElementById('level2LevelsBtn').disabled = false;
+      document.getElementById('level3LevelsBtn').disabled = false;
+
+      // Switch to the levels screen
+      document.getElementById('renderDiv').style.display = 'none';
+      document.getElementById('levelsScreen').style.display = 'flex';
+    });
+  }
+
+  barkEffect() {
+    if (this.gameState === 'searching') {
+      const bubble = this.add.image(this.puppy.x, this.puppy.y - 50, 'speechBubble');
+      bubble.setScale(0.1);
+      const bark = this.add.text(bubble.x - 20, bubble.y - 10, 'Woof!', {
+        fontSize: '16px',
+        fill: '#000'
+      });
+
+      this.tweens.add({
+        targets: [bubble, bark],
+        y: '-=30',
+        alpha: 0,
+        duration: 1000,
+        onComplete: () => {
+          bubble.destroy();
+          bark.destroy();
+        }
+      });
+    }
+  }
+
+  touchPuppy() {
+    if (this.gameState === 'climbing' && !this.carrying) {
+      this.gameState = 'rescuing';
+      this.progressText.setText('Press R to rescue the puppy!');
+    }
+  }
+
+  update() {
+    // Track if player is on ladder
+    this.player.onLadder = false;
+
+    // Basic movement (left/right)
+    if (!this.carrying) {
+      if (this.cursors.left.isDown) {
+        this.player.setVelocityX(-160);
+        this.player.flipX = true;
+      } else if (this.cursors.right.isDown) {
+        this.player.setVelocityX(160);
+        this.player.flipX = false;
+      } else {
+        this.player.setVelocityX(0);
+      }
+    } else {
+      if (this.cursors.left.isDown) {
+        this.player.setVelocityX(-160);
+        this.player.flipX = true;
+        this.player.setTexture('playerCarrying');
+      } else if (this.cursors.right.isDown) {
+        this.player.setVelocityX(160);
+        this.player.flipX = false;
+        this.player.setTexture('playerCarrying');
+      } else {
+        this.player.setVelocityX(0);
+        this.player.setTexture('playerCarrying');
+      }
+    }
+
+    // Jumping with W key - always enabled when on ground
+    if (this.wKey.isDown && this.player.body.touching.down) {
+      this.player.setVelocityY(-400); // Reduced jump velocity for more control
+      this.player.setTexture('playerClimb');
+    }
+
+    // Climbing only when touching trunk area and in the air
+    const canClimb = this.player.x >= 350 && this.player.x <= 450;
+    if (canClimb && !this.player.body.touching.down) {
+      if (this.cursors.up.isDown) {
+        this.player.setVelocityY(-160);
+        this.player.setTexture(this.carrying ? 'playerCarrying' : 'playerClimb');
+      } else if (this.cursors.down.isDown) {
+        this.player.setVelocityY(160);
+        this.player.setTexture(this.carrying ? 'playerCarrying' : 'playerClimb');
+      }
+    }
+
+    // Handle ladder climbing
+    if (this.player.onLadder) {
+      // Reduce horizontal movement on ladder
+      if (this.cursors.left.isDown) {
+        this.player.setVelocityX(-80);
+      } else if (this.cursors.right.isDown) {
+        this.player.setVelocityX(80);
+      } else {
+        this.player.setVelocityX(0);
+      }
+
+      // Vertical movement on ladder
+      if (this.cursors.up.isDown) {
+        this.player.setVelocityY(-120);
+        this.player.setTexture(this.carrying ? 'playerCarrying' : 'playerClimb');
+      } else if (this.cursors.down.isDown) {
+        this.player.setVelocityY(120);
+        this.player.setTexture(this.carrying ? 'playerCarrying' : 'playerClimb');
+      } else {
+        this.player.setVelocityY(0);
+      }
+
+      // Remove gravity while on ladder
+      this.player.body.setGravityY(0);
+    } else {
+      // Restore gravity when not on ladder
+      this.player.body.setGravityY(300);
+    }
+
+    // Game state management
+    switch (this.gameState) {
+      case 'searching':
+        if (this.player.x > 300 && this.player.x < 500) {
+          this.gameState = 'climbing';
+          this.progressText.setText('Climb the tree to reach the puppy!');
+        }
+        break;
+
+      case 'rescuing':
+        if (Phaser.Input.Keyboard.JustDown(this.rKey)) {
+          this.carrying = true;
+          this.gameState = 'descending';
+          this.player.setTexture('playerCarrying');
+          this.progressText.setText('Carefully climb down with the puppy!');
+        }
+        break;
+
+      case 'complete':
+        // Level completed logic
+        this.progressText.setText('Level Complete! You saved the puppy!');
+        this.scene.pause(); // Pause the game
+
+        // Unlock the next level
+        if (currentLevel < 3) {
+          currentLevel++; // Increment the current level
+          document.getElementById(`level${currentLevel}LevelsBtn`).disabled = false; // Enable the next level button
+        }
+
+        // Return to levels screen after 3 seconds
+        setTimeout(() => {
+          document.getElementById('renderDiv').style.display = 'none';
+          document.getElementById('levelsScreen').style.display = 'flex';
+        }, 3000);
+        break;
+    }
+  }
+
+  onLadder(player, ladder) {
+    // Set player as on ladder when overlapping
+    this.player.onLadder = true;
+  }
+}
+
+    // Level 3: Forest Restoration
+    class ForestRestoration extends Phaser.Scene {
+      constructor() {
+        super();
+        this.score = 0;
+        this.requiredTrees = 5;
+        this.waterLevel = 100;
+        this.canGrow = true;
+      }
+
+      preload() {
+        // Load all generated assets
+        this.load.image('background', 'https://play.rosebud.ai/assets/background.png?uOHO');
+        this.load.image('player', 'https://play.rosebud.ai/assets/firefighter (1).jpg?dVwq');
+        this.load.image('plantSpot', 'https://play.rosebud.ai/assets/plantSpot.png?ybJB');
+        this.load.image('sapling', 'https://play.rosebud.ai/assets/sapling.png?IEEQ');
+        this.load.image('tree', 'https://play.rosebud.ai/assets/tree.png?fFY2');
+        this.load.image('waterDrop', 'https://play.rosebud.ai/assets/waterDrop.png?zNib');
+        this.load.image('bug', 'https://play.rosebud.ai/assets/bug.png?7eYl');
+        this.load.image('trash', 'https://play.rosebud.ai/assets/trash.png?c7VD');
+        this.load.image('recyclingBin', 'https://play.rosebud.ai/assets/recyclingBin.png?MFKi');
+        this.load.image('pollutionCloud', 'https://play.rosebud.ai/assets/pollutionCloud.png?Q7pB');
+        this.load.image('wateringCan', 'https://play.rosebud.ai/assets/wateringCan.png?ALFN');
+        this.load.image('bugSpray', 'https://play.rosebud.ai/assets/bugSpray.png?xUaW');
+      }
+
+      create() {
+        // Set background
+        const background = this.add.image(400, 300, 'background');
+        const scaleX = this.sys.game.config.width / background.width;
+        const scaleY = this.sys.game.config.height / background.height;
+        const scale = Math.max(scaleX, scaleY);
+        background.setScale(scale);
+
+        // Score text
+        this.scoreText = this.add.text(16, 16, 'Trees Grown: 0/' + this.requiredTrees, {
+          fontSize: '32px',
+          fill: '#fff'
+        });
+        this.waterText = this.add.text(16, 56, 'Water: 100%', {
+          fontSize: '32px',
+          fill: '#fff'
+        });
+
+        // Create player
+        this.player = this.physics.add.sprite(400, 300, 'player');
+        this.player.setScale(0.08); // Adjust scale for firefighter sprite
+        this.physics.add.existing(this.player, false);
+        this.player.body.setCollideWorldBounds(true);
+
+        // Create groups
+        this.saplings = this.physics.add.group();
+        this.trees = this.physics.add.staticGroup();
+        this.waterDrops = this.physics.add.group();
+        this.bugs = this.physics.add.group();
+
+        // Plant spots
+        this.plantSpots = [];
+        for (let i = 0; i < 8; i++) {
+          const spot = this.add.image(
+            Phaser.Math.Between(100, 700),
+            Phaser.Math.Between(100, 500),
+            'plantSpot'
+          );
+          spot.setScale(0.05); // Adjust scale for plant spot
+          this.plantSpots.push(spot);
+        }
+
+        // Spawn water drops
+        this.time.addEvent({
+          delay: 3000,
+          callback: this.spawnWaterDrop,
+          callbackScope: this,
+          loop: true
+        });
+
+        // Spawn bugs
+        this.time.addEvent({
+          delay: 2000,
+          callback: this.spawnBug,
+          callbackScope: this,
+          loop: true
+        });
+
+        // Decrease water level
+        this.time.addEvent({
+          delay: 1000,
+          callback: this.decreaseWater,
+          callbackScope: this,
+          loop: true
+        });
+
+        // Input
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.spaceKey = this.input.keyboard.addKey('SPACE');
+        this.tKey = this.input.keyboard.addKey('T');
+
+        // Plant sapling on click
+        this.input.on('pointerdown', (pointer) => {
+          this.plantSapling(pointer.x, pointer.y);
+        });
+
+        // Colliders
+        this.physics.add.overlap(this.player, this.waterDrops, this.collectWater, null, this);
+        this.physics.add.overlap(this.player, this.bugs, this.removeBug, null, this);
+        this.physics.add.overlap(this.saplings, this.bugs, this.damageTree, null, this);
+      }
+
+      update() {
+        // Player movement
+        const speed = 200;
+        if (this.cursors.left.isDown) {
+          this.player.setVelocityX(-speed);
+          this.player.flipX = true;
+        } else if (this.cursors.right.isDown) {
+          this.player.setVelocityX(speed);
+          this.player.flipX = false;
+        } else {
+          this.player.setVelocityX(0);
+        }
+
+        if (this.cursors.up.isDown) {
+          this.player.setVelocityY(-speed);
+        } else if (this.cursors.down.isDown) {
+          this.player.setVelocityY(speed);
+        } else {
+          this.player.setVelocityY(0);
+        }
+
+        // Check for T key press to grow trees
+        if (Phaser.Input.Keyboard.JustDown(this.tKey)) {
+    this.saplings.children.iterate((sapling) => {
+        if (sapling) {
+            this.growTree(sapling.x, sapling.y);
+            sapling.destroy();
+        }
+    });
+}
+      
+      }
+
+      plantSapling(x, y) {
+        let canPlant = false;
+        this.plantSpots.forEach(spot => {
+          if (Phaser.Math.Distance.Between(x, y, spot.x, spot.y) < 30) {
+            canPlant = true;
+          }
+        });
+
+        if (canPlant && this.waterLevel >= 20) {
+          const sapling = this.saplings.create(x, y, 'sapling');
+          sapling.setScale(0.05); // Adjust scale for sapling
+          sapling.growthTime = 300;
+          this.waterLevel -= 20;
+          this.updateWaterText();
+        }
+      }
+
+      growTree(x, y) {
+        const tree = this.trees.create(x, y, 'tree');
+    tree.setScale(0.1); // Adjust scale for tree
+    this.score++;
+    this.scoreText.setText('Trees Grown: ' + this.score + '/' + this.requiredTrees);
+
+    if (this.score >= this.requiredTrees) {
+        const gameWidth = this.sys.game.config.width;
+        const gameHeight = this.sys.game.config.height;
+        const text = this.add.text(gameWidth / 2, gameHeight / 2, 'Forest Restored!', {
+            fontSize: '64px',
+            fill: '#fff'
+        });
+        text.setOrigin(0.5); // Center the text
+        this.scene.pause(); // Pause the game
+    }
+} // Add this closing brace
+
+    spawnWaterDrop() {
+        const x = Phaser.Math.Between(0, 800);
+        const y = Phaser.Math.Between(0, 600);
+        const drop = this.waterDrops.create(x, y, 'waterDrop');
+        drop.setScale(0.05); // Adjust scale for water drop
+    }
+
+    spawnBug() {
+        const x = Phaser.Math.Between(0, 800);
+        const y = Phaser.Math.Between(0, 600);
+        const bug = this.bugs.create(x, y, 'bug');
+        bug.setScale(0.05); // Adjust scale for bug
+        bug.setVelocity(Phaser.Math.Between(-100, 100), Phaser.Math.Between(-100, 100));
+        bug.setBounce(1, 1);
+        bug.setCollideWorldBounds(true);
+    }
+
+    collectWater(player, water) {
+        water.destroy();
+        this.waterLevel = Math.min(100, this.waterLevel + 10);
+        this.updateWaterText();
+    }
+
+    removeBug(player, bug) {
+        bug.destroy();
+    }
+
+    damageTree(sapling, bug) {
+        sapling.growthTime += 30;
+        bug.destroy();
+    }
+
+    
+
+    decreaseWater() {
+        this.waterLevel = Math.max(0, this.waterLevel - 1);
+        this.updateWaterText();
+    }
+
+    updateWaterText() {
+        this.waterText.setText('Water: ' + this.waterLevel + '%');
+    }
+}
+
+
+ config = {
+    type: Phaser.AUTO,
+    parent: 'renderDiv',
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    width: 800,
+    height: 600,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            debug: false
+        }
+    },
+    scene: ForestRestoration
+};
+
+window.phaserGame = new Phaser.Game(config);
+
+document.getElementById('level3LevelsBtn').addEventListener('click', () => {
+    document.getElementById('levelsScreen').style.display = 'none';
+    document.getElementById('renderDiv').style.display = 'block';
+    if (window.phaserGame) {
+        window.phaserGame.destroy(true);
+    }
+    window.phaserGame = new Phaser.Game({
+        type: Phaser.AUTO,
+        parent: 'renderDiv',
+        width: 800,
+        height: 600,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 200 },
+                debug: false
+            } },
+        scene: Level3 // Assuming Level3 is your Level 3 scene
+    });
+});
+  </script>
+</body>
+</html>
